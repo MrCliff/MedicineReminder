@@ -11,16 +11,20 @@ const uint8_t kPinFastForwardBtn = 7;
 
 // Arduino handles integers as 16 bit values, so 12 hours (43200s) would
 // overflow and become a negative value, if there wasn't a type cast.
-const uint32_t kShiftTimeSec = (uint32_t)60 * 60 * 12;
+uint32_t shiftTimeSec = (uint32_t)60 * 60 * 12;
 
-DualPwmLed dualLedRG = DualPwmLed(kPinPWMLedG, kPinPWMLedR, PwmBoundaryValues::kHigh);
-PwmLed ledB = Led(kPinLedB, DigitalBoundaryValues::kHigh);
+DualPwmLed dualLedRG = DualPwmLed(kPinPWMLedG, kPinPWMLedR, PwmBoundaryValues::kHighPwm);
+Led ledB = Led(kPinLedB, DigitalBoundaryValues::kHighDig);
 
 uint32_t lastResetTs = 0;
 
 volatile bool resetTsFlag = false;
 
-Accelerator ffAccelerator(2.0);
+Accelerator ffAccelerator(1.0);
+
+// bool isRecording = false;
+bool wasRecordPressedLastLoop = false;
+uint32_t recordStartTs = 0;
 
 void setup() {
   dualLedRG.begin();
@@ -29,6 +33,7 @@ void setup() {
   rtc.begin();
   lastResetTs = rtc.now().getEpoch();
 
+  // For debug
   Serial.begin(115200);
 
   // Buttons
@@ -51,31 +56,58 @@ void loop() {
   // Fast forward
   if (digitalRead(kPinFastForwardBtn)) {
     ffAccelerator.accelerate();
-    lastResetTs = (uint32_t)constrain((double)lastResetTs - ffAccelerator.getValue(), (double)0, (double)ts);
+    lastResetTs = (uint32_t)constrain(
+      lastResetTs - (uint32_t)ffAccelerator.getValue(), (uint32_t)0, ts
+    );
   }
   else {
     ffAccelerator.reset();
   }
 
+  // Record
+  if (digitalRead(kPinRecordBtn)) {
+    // Start recording
+    if (recordStartTs == 0 && !wasRecordPressedLastLoop) {
+      ledB.setValue((uint8_t)DigitalBoundaryValues::kHighDig);
+      recordStartTs = ts;
+    }
+
+    // Stop recording
+    uint32_t newShiftTime = ts - recordStartTs;
+    if (recordStartTs != 0 && newShiftTime > 0 && !wasRecordPressedLastLoop) {
+      shiftTimeSec = newShiftTime;
+      recordStartTs = 0;
+      ledB.setValue((uint8_t)DigitalBoundaryValues::kLowDig);
+    }
+
+    wasRecordPressedLastLoop = true;
+  }
+  else {
+    wasRecordPressedLastLoop = false;
+  }
+
+  // Set main led value
   lastResetTs = (uint32_t)constrain(lastResetTs, (uint32_t)0, ts);
-  double ledRGValue = 1.0 - ((double)(ts - lastResetTs) / kShiftTimeSec);
+  double ledRGValue = 1.0 - ((double)(ts - lastResetTs) / shiftTimeSec);
   dualLedRG.setTwoPoleValue(ledRGValue);
-  Serial.print("LedValue: ");
+
+  // Debug prints
+  Serial.print(";  LedValue: ");
   Serial.print(ledRGValue);
-  Serial.print("; Epoch: ");
+  Serial.print(";  ts: ");
   Serial.print(ts);
-  Serial.print("; lastResetEpoch: ");
+  Serial.print(";  lastResetTs: ");
   Serial.print(lastResetTs);
-  Serial.print("; kShiftTimeSec: ");
-  Serial.print(kShiftTimeSec);
-  Serial.print("; (uint32_t)60 * 60 * 12: ");
-  Serial.print((uint32_t)60 * 60 * 12);
-  Serial.print("; ts - lastResetTs: ");
+  Serial.print(";  ts - lastResetTs: ");
   Serial.print(ts - lastResetTs);
-  Serial.print("; ts - lastResetTs / kShiftTimeSec: ");
-  Serial.print((double)(ts - lastResetTs) / kShiftTimeSec);
-  Serial.print("; ffSpeed: ");
-  Serial.println(ffAccelerator.getValue());
+  Serial.print(";  shiftTimeSec: ");
+  Serial.print(shiftTimeSec);
+  Serial.print(";  (double)(ts - lastResetTs) / shiftTimeSec: ");
+  Serial.print((double)(ts - lastResetTs) / shiftTimeSec);
+  Serial.print(";  ffSpeed: ");
+  Serial.print(ffAccelerator.getValue());
+  Serial.print(";  recordStartTs: ");
+  Serial.println(recordStartTs);
 
   delay(100);
 }

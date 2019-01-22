@@ -6,8 +6,8 @@
  * Represents the boundary values of a PWM pin on an Arduino board.
  */
 enum PwmBoundaryValues : uint8_t {
-  kLow = 0,
-  kHigh = UINT8_MAX
+  kLowPwm = 0,
+  kHighPwm = UINT8_MAX
 };
 
 
@@ -15,8 +15,8 @@ enum PwmBoundaryValues : uint8_t {
  * Represents the boundary values of a digital pin on an Arduino board.
  */
 enum DigitalBoundaryValues : uint8_t {
-  kLow = LOW,
-  kHigh = HIGH
+  kLowDig = LOW,
+  kHighDig = HIGH
 };
 
 
@@ -36,7 +36,7 @@ public:
 
   void setValue(uint8_t val) {
     currentValue = constrain(
-      val, DigitalBoundaryValues::kLow, DigitalBoundaryValues::kHigh
+      val, kLowDig, kHighDig
     );
     writeValue();
   }
@@ -44,7 +44,7 @@ public:
   void setValue(double val) {
     double constrVal = constrain(val, 0, 1);
     currentValue = (uint8_t)lround(
-      constrVal * DigitalBoundaryValues::kHigh + DigitalBoundaryValues::kLow
+      constrVal * kHighDig + kLowDig
     );
     writeValue();
   }
@@ -58,11 +58,11 @@ public:
    */
   void writeValue() const {
     switch (offValue) {
-      case DigitalBoundaryValues::kHigh:
-        digitalWrite(pinNumber, DigitalBoundaryValues::kHigh - currentValue);
+      case kHighDig:
+        digitalWrite(pinNumber, kHighDig - currentValue);
         break;
-      case DigitalBoundaryValues::kLow:
-        digitalWrite(pinNumber, currentValue - DigitalBoundaryValues::kLow);
+      case kLowDig:
+        digitalWrite(pinNumber, currentValue - kLowDig);
         break;
     }
   }
@@ -91,7 +91,7 @@ public:
 
   void setValue(uint8_t val) {
     currentValue = constrain(
-      val, PwmBoundaryValues::kLow, PwmBoundaryValues::kHigh
+      val, kLowPwm, kHighPwm
     );
     writeValue();
   }
@@ -99,7 +99,7 @@ public:
   void setValue(double val) {
     double constrVal = constrain(val, 0, 1);
     currentValue = (uint8_t)lround(
-      constrVal * PwmBoundaryValues::kHigh + PwmBoundaryValues::kLow
+      constrVal * kHighPwm + kLowPwm
     );
     writeValue();
   }
@@ -113,11 +113,11 @@ public:
    */
   void writeValue() const {
     switch (offValue) {
-      case PwmBoundaryValues::kHigh:
-        analogWrite(pinNumber, PwmBoundaryValues::kHigh - currentValue);
+      case kHighPwm:
+        analogWrite(pinNumber, kHighPwm - currentValue);
         break;
-      case PwmBoundaryValues::kLow:
-        analogWrite(pinNumber, currentValue - PwmBoundaryValues::kLow);
+      case kLowPwm:
+        analogWrite(pinNumber, currentValue - kLowPwm);
         break;
     }
   }
@@ -151,7 +151,7 @@ public:
 
   void setTwoPoleValue(uint8_t val) {
     led1.setValue(val);
-    led2.setValue((uint8_t)(PwmBoundaryValues::kHigh - val));
+    led2.setValue((uint8_t)(kHighPwm - val));
   }
 
   void setTwoPoleValue(double val) {
