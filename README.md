@@ -14,6 +14,9 @@ oftentimes forget, whether you just have taken the medicine or not. But now, if
 you add just one button press to your habit, Arduino will tell you whether you
 just took the medicine or not.
 
+
+## About the program
+
 The color shift time (time it takes for the indicator to turn from green to red)
 is 12 hours by default.
 
@@ -34,7 +37,7 @@ There are three buttons that this program currently supports:
 
 ## Installation
 
-1. Open this project with (PlatformIO)[https://platformio.org/platformio-ide].
+1. Open this project with [PlatformIO](https://platformio.org/platformio-ide).
 1. If you are using Arduino Uno or Arduino Nano (Atmega328P w/ old bootloader),
    just comment out the board you aren't using in the `env_default =` setting of
    _platformio.ini_ file.
@@ -46,6 +49,8 @@ There are three buttons that this program currently supports:
    dependencies for you.
 
 There are two example images (made using
-(Fritzing)[http://fritzing.org/download/]) of the required components and
+[Fritzing](http://fritzing.org/download/)) of the required components and
 connections in the _schematics_ folder. The model of the RTC board is
 _DS3231 AT24C32_.
+
+![A breadboard schematic for Uno](schematics/Medicine-reminder-Uno.png "A breadboard schematic for Uno")
