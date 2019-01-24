@@ -89,7 +89,7 @@ void loop() {
   // Set main led value
   lastResetTs = (uint32_t)constrain(lastResetTs, (uint32_t)0, ts);
   double ledRGValue = 1.0 - ((double)(ts - lastResetTs) / shiftTimeSec);
-  dualLedRG.setTwoPoleValue(ledRGValue);
+  dualLedRG.setBipolarValue(ledRGValue);
 
   // Debug prints
   Serial.print(";  LedValue: ");

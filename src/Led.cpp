@@ -24,6 +24,11 @@ enum DigitalBoundaryValues : uint8_t {
  * Represents one LED connected to a digital pin.
  */
 class Led {
+  const DigitalBoundaryValues offValue;
+  const uint8_t pinNumber;
+
+  uint8_t currentValue;
+
 public:
   Led(uint8_t pinNumber, DigitalBoundaryValues offValue) :
     pinNumber(pinNumber), offValue(offValue) {
@@ -66,12 +71,6 @@ public:
         break;
     }
   }
-
-private:
-  const DigitalBoundaryValues offValue;
-  const uint8_t pinNumber;
-
-  uint8_t currentValue;
 };
 
 
@@ -79,6 +78,11 @@ private:
  * Represents one LED connected to a PWM pin.
  */
 class PwmLed {
+  const PwmBoundaryValues offValue;
+  const uint8_t pinNumber;
+
+  uint8_t currentValue;
+
 public:
   PwmLed(uint8_t pinNumber, PwmBoundaryValues offValue) :
     pinNumber(pinNumber), offValue(offValue) {
@@ -121,12 +125,6 @@ public:
         break;
     }
   }
-
-private:
-  const PwmBoundaryValues offValue;
-  const uint8_t pinNumber;
-
-  uint8_t currentValue;
 };
 
 
@@ -134,6 +132,9 @@ private:
  * Represents two LEDs connected to PWM pins.
  */
 class DualPwmLed {
+  PwmLed led1;
+  PwmLed led2;
+
 public:
   DualPwmLed(uint8_t led1Pin, uint8_t led2Pin, PwmBoundaryValues offValue) :
     DualPwmLed(led1Pin, led2Pin, offValue, offValue) {
@@ -149,12 +150,12 @@ public:
     led2.begin();
   }
 
-  void setTwoPoleValue(uint8_t val) {
+  void setBipolarValue(uint8_t val) {
     led1.setValue(val);
     led2.setValue((uint8_t)(kHighPwm - val));
   }
 
-  void setTwoPoleValue(double val) {
+  void setBipolarValue(double val) {
     double constrVal = constrain(val, 0, 1);
     led1.setValue(constrVal);
     led2.setValue(1.0 - constrVal);
@@ -172,10 +173,6 @@ public:
     led1.writeValue();
     led2.writeValue();
   }
-
-private:
-  PwmLed led1;
-  PwmLed led2;
 };
 
 
@@ -183,6 +180,10 @@ private:
  * Holds a value that can be changed in an accelerating manner.
  */
 class Accelerator {
+  const double rate;
+  double acceleration;
+  double value;
+
 public:
   Accelerator(double rate) : rate(rate) {
   }
@@ -200,9 +201,4 @@ public:
   double getValue() const {
     return value;
   }
-
-private:
-  const double rate;
-  double acceleration;
-  double value;
 };
