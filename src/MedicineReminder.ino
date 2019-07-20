@@ -12,11 +12,11 @@ const uint8_t kPinFastForwardBtn = 7;
 /**
  * The Gamma value used in the LEDs.
  */
-const double kGamma = 2.0;
+const double kGamma = 2.2;
 /**
  * The max number of seconds it takes to fast forward fully to red.
  */
-const double kFullFFTimeSec = 5.0;
+const double kFullFFTimeSec = 3.0;
 
 // Arduino handles integers as 16 bit values, so 12 hours (43200s) would
 // overflow and become a negative value, if there wasn't a type cast.
