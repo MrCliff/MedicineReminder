@@ -39,10 +39,10 @@ There are three buttons that this program currently supports:
 
 1. Open this project with [PlatformIO](https://platformio.org/platformio-ide).
 1. If you are using Arduino Uno or Arduino Nano (Atmega328P w/ old bootloader),
-   just comment out the board you aren't using in the `env_default =` setting of
+   just comment out the board you aren't using in the `default_envs =` setting of
    _platformio.ini_ file.
     * Otherwise add your board to the file with its own `[env:board_id_here]`
-      section and the board id to the `env_default =` setting.
+      section and the board id to the `default_envs =` setting.
     * Remember to change the pin numbers in the _src/MedicineReminder.ino_ file,
       if needed.
 1. Build and upload the project to your Arduino. PlatformIO will install the

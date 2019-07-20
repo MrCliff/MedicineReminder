@@ -9,22 +9,37 @@ const uint8_t kPinInterruptBtn = 2;
 const uint8_t kPinRecordBtn = 8;
 const uint8_t kPinFastForwardBtn = 7;
 
+/**
+ * The Gamma value used in the LEDs.
+ */
+const double kGamma = 2.0;
+/**
+ * The max number of seconds it takes to fast forward fully to red.
+ */
+const double kFullFFTimeSec = 5.0;
+
 // Arduino handles integers as 16 bit values, so 12 hours (43200s) would
 // overflow and become a negative value, if there wasn't a type cast.
 uint32_t shiftTimeSec = (uint32_t)60 * 60 * 12;
 
-DualPwmLed dualLedRG = DualPwmLed(kPinPWMLedG, kPinPWMLedR, PwmBoundaryValues::kHighPwm);
+DualPwmLed dualLedRG = DualPwmLed(
+  kPinPWMLedG, kPinPWMLedR, PwmBoundaryValues::kHighPwm, kGamma);
 Led ledB = Led(kPinLedB, DigitalBoundaryValues::kHighDig);
 
 uint32_t lastResetTs = 0;
 
 volatile bool resetTsFlag = false;
 
-Accelerator ffAccelerator(1.0);
+ValueChanger ffValueChanger(kFullFFTimeSec, shiftTimeSec);
+uint32_t lastFfMillis = 0;
 
 // bool isRecording = false;
 bool wasRecordPressedLastLoop = false;
 uint32_t recordStartTs = 0;
+
+void resetTs() {
+  resetTsFlag = true;
+}
 
 void setup() {
   dualLedRG.begin();
@@ -45,6 +60,7 @@ void setup() {
 void loop() {
   DateTime now = rtc.now(); // get the current date-time
   uint32_t ts = now.getEpoch();
+  double deltaTimeSec = ((uint32_t)millis() - lastFfMillis) / 1000.0;
 
   // Reset
   if (resetTsFlag) {
@@ -55,20 +71,19 @@ void loop() {
 
   // Fast forward
   if (digitalRead(kPinFastForwardBtn)) {
-    ffAccelerator.accelerate();
     lastResetTs = (uint32_t)constrain(
-      lastResetTs - (uint32_t)ffAccelerator.getValue(), (uint32_t)0, ts
+      lastResetTs - (uint32_t)ffValueChanger
+        .getValueAfter(deltaTimeSec),
+      (uint32_t)0,
+      ts
     );
-  }
-  else {
-    ffAccelerator.reset();
   }
 
   // Record
   if (digitalRead(kPinRecordBtn)) {
     // Start recording
     if (recordStartTs == 0 && !wasRecordPressedLastLoop) {
-      ledB.setValue((uint8_t)DigitalBoundaryValues::kHighDig);
+      ledB.setByteValue((uint8_t)DigitalBoundaryValues::kHighDig);
       recordStartTs = ts;
     }
 
@@ -76,8 +91,9 @@ void loop() {
     uint32_t newShiftTime = ts - recordStartTs;
     if (recordStartTs != 0 && newShiftTime > 0 && !wasRecordPressedLastLoop) {
       shiftTimeSec = newShiftTime;
+      ffValueChanger.setTargetValue(shiftTimeSec);
       recordStartTs = 0;
-      ledB.setValue((uint8_t)DigitalBoundaryValues::kLowDig);
+      ledB.setByteValue((uint8_t)DigitalBoundaryValues::kLowDig);
     }
 
     wasRecordPressedLastLoop = true;
@@ -105,13 +121,10 @@ void loop() {
   Serial.print(";  (double)(ts - lastResetTs) / shiftTimeSec: ");
   Serial.print((double)(ts - lastResetTs) / shiftTimeSec);
   Serial.print(";  ffSpeed: ");
-  Serial.print(ffAccelerator.getValue());
+  Serial.print(ffValueChanger.getValueAfter(deltaTimeSec));
   Serial.print(";  recordStartTs: ");
   Serial.println(recordStartTs);
 
+  lastFfMillis = (uint32_t)millis();
   delay(100);
-}
-
-void resetTs() {
-  resetTsFlag = true;
 }

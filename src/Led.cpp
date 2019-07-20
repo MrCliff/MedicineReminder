@@ -1,6 +1,10 @@
+#ifndef LED
+#define LED
+
 #include <Arduino.h>
 #include <stdint.h>
 #include <math.h>
+#include "Util.h"
 
 /**
  * Represents the boundary values of a PWM pin on an Arduino board.
@@ -27,7 +31,7 @@ class Led {
   const DigitalBoundaryValues offValue;
   const uint8_t pinNumber;
 
-  uint8_t currentValue;
+  DigitalBoundaryValues currentValue;
 
 public:
   Led(uint8_t pinNumber, DigitalBoundaryValues offValue) :
@@ -39,22 +43,26 @@ public:
     digitalWrite(pinNumber, offValue);
   }
 
-  void setValue(uint8_t val) {
-    currentValue = constrain(
-      val, kLowDig, kHighDig
-    );
+  /**
+   * Sets the LED value to the given byte value (value between 0 and 255).
+   */
+  void setByteValue(uint8_t val) {
+    currentValue = val >= (kHighDig - kLowDig) / 2.0 ? kHighDig : kLowDig;
     writeValue();
   }
 
+  /**
+   * Sets the LED value to the given percentage (value between 0 and 1).
+   */
   void setValue(double val) {
-    double constrVal = constrain(val, 0, 1);
-    currentValue = (uint8_t)lround(
-      constrVal * kHighDig + kLowDig
-    );
+    currentValue = val >= 0.5 ? kHighDig : kLowDig;
     writeValue();
   }
 
-  uint8_t getValue() const {
+  /**
+   * Returns the currently assigned value.
+   */
+  DigitalBoundaryValues getValue() const {
     return currentValue;
   }
 
@@ -62,14 +70,10 @@ public:
    * Writes the current value to the output.
    */
   void writeValue() const {
-    switch (offValue) {
-      case kHighDig:
-        digitalWrite(pinNumber, kHighDig - currentValue);
-        break;
-      case kLowDig:
-        digitalWrite(pinNumber, currentValue - kLowDig);
-        break;
-    }
+    DigitalBoundaryValues onValue = offValue == kHighDig ? kLowDig : kHighDig;
+    digitalWrite(pinNumber,
+      map(currentValue, kLowDig, kHighDig, offValue, onValue)
+    );
   }
 };
 
@@ -80,12 +84,13 @@ public:
 class PwmLed {
   const PwmBoundaryValues offValue;
   const uint8_t pinNumber;
+  const double gamma;
 
   uint8_t currentValue;
 
 public:
-  PwmLed(uint8_t pinNumber, PwmBoundaryValues offValue) :
-    pinNumber(pinNumber), offValue(offValue) {
+  PwmLed(uint8_t pinNumber, PwmBoundaryValues offValue, double gamma) :
+    pinNumber(pinNumber), offValue(offValue), gamma(gamma) {
   }
 
   void begin() {
@@ -93,13 +98,19 @@ public:
     analogWrite(pinNumber, offValue);
   }
 
-  void setValue(uint8_t val) {
+  /**
+   * Sets the LED value to the given byte value (value between 0 and 255).
+   */
+  void setByteValue(uint8_t val) {
     currentValue = constrain(
       val, kLowPwm, kHighPwm
     );
     writeValue();
   }
 
+  /**
+   * Sets the LED value to the given percentage (value between 0 and 1).
+   */
   void setValue(double val) {
     double constrVal = constrain(val, 0, 1);
     currentValue = (uint8_t)lround(
@@ -108,22 +119,34 @@ public:
     writeValue();
   }
 
+  /**
+   * Returns the currently assigned value.
+   */
   uint8_t getValue() const {
     return currentValue;
   }
 
   /**
-   * Writes the current value to the output.
+   * Writes the current value to the output (with Gamma correction).
    */
   void writeValue() const {
-    switch (offValue) {
-      case kHighPwm:
-        analogWrite(pinNumber, kHighPwm - currentValue);
-        break;
-      case kLowPwm:
-        analogWrite(pinNumber, currentValue - kLowPwm);
-        break;
-    }
+    PwmBoundaryValues onValue = offValue == kHighPwm ? kLowPwm : kHighPwm;
+    analogWriteWithGammaCorrection(
+      map(currentValue, kLowPwm, kHighPwm, offValue, onValue)
+    );
+  }
+
+private:
+  /**
+   * Gamma corrects and analogWrites the given analogValue.
+   */
+  void analogWriteWithGammaCorrection(uint8_t analogValue) {
+    double percentage = dMap(analogValue, kLowPwm, kHighPwm, 0.0, 1.0);
+    analogWrite(pinNumber, (uint8_t)constrain(lround(dMap(
+      pow(percentage, gamma),
+      0.0, 1.0,
+      kLowPwm, kHighPwm
+    )), kLowPwm, kHighPwm));
   }
 };
 
@@ -136,13 +159,14 @@ class DualPwmLed {
   PwmLed led2;
 
 public:
-  DualPwmLed(uint8_t led1Pin, uint8_t led2Pin, PwmBoundaryValues offValue) :
-    DualPwmLed(led1Pin, led2Pin, offValue, offValue) {
+  DualPwmLed(uint8_t led1Pin, uint8_t led2Pin, PwmBoundaryValues offValue,
+    double gamma) :
+    DualPwmLed(led1Pin, led2Pin, offValue, offValue, gamma) {
   }
 
   DualPwmLed(uint8_t led1Pin, uint8_t led2Pin, PwmBoundaryValues offValue1,
-    PwmBoundaryValues offValue2) :
-    led1(led1Pin, offValue1), led2(led2Pin, offValue2) {
+    PwmBoundaryValues offValue2, double gamma) :
+    led1(led1Pin, offValue1, gamma), led2(led2Pin, offValue2, gamma) {
   }
 
   void begin() {
@@ -150,21 +174,33 @@ public:
     led2.begin();
   }
 
-  void setBipolarValue(uint8_t val) {
-    led1.setValue(val);
-    led2.setValue((uint8_t)(kHighPwm - val));
+  /**
+   * Sets the LED value to the given byte value (value between 0 and 255).
+   */
+  void setBipolarByteValue(uint8_t val) {
+    led1.setByteValue(val);
+    led2.setByteValue((uint8_t)(kHighPwm - val));
   }
 
+  /**
+   * Sets the LED value to the given percentage (value between 0 and 1).
+   */
   void setBipolarValue(double val) {
     double constrVal = constrain(val, 0, 1);
     led1.setValue(constrVal);
     led2.setValue(1.0 - constrVal);
   }
 
+  /**
+   * Returns the value currently assigned to LED 1.
+   */
   uint8_t getLed1Value() const {
     return led1.getValue();
   }
 
+  /**
+   * Returns the value currently assigned to LED 2.
+   */
   uint8_t getLed2Value() const {
     return led2.getValue();
   }
@@ -177,28 +213,27 @@ public:
 
 
 /**
- * Holds a value that can be changed in an accelerating manner.
+ * Holds a value that can be changed over time.
  */
-class Accelerator {
-  const double rate;
-  double acceleration;
-  double value;
+class ValueChanger {
+  const double fullChangeTimeSec;
+  uint32_t targetValue;
 
 public:
-  Accelerator(double rate) : rate(rate) {
+  ValueChanger(double fullChangeTimeSec, uint32_t targetValue) :
+    fullChangeTimeSec(fullChangeTimeSec), targetValue(targetValue) {
   }
 
-  void accelerate() {
-    acceleration += rate;
-    value += acceleration;
+  void setTargetValue(const uint32_t targetValue) {
+    this->targetValue = targetValue;
   }
 
-  void reset() {
-    acceleration = 0.0;
-    value = 0.0;
-  }
-
-  double getValue() const {
-    return value;
+  /**
+   * Returns the value at the given time instant.
+   */
+  double getValueAfter(double timeSec) const {
+    return timeSec / fullChangeTimeSec * targetValue;
   }
 };
+
+#endif
