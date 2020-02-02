@@ -43,7 +43,7 @@ There are three buttons that this program currently supports:
    _platformio.ini_ file.
     * Otherwise add your board to the file with its own `[env:board_id_here]`
       section and the board id to the `default_envs =` setting.
-    * Remember to change the pin numbers in the _src/MedicineReminder.ino_ file,
+    * Remember to change the pin numbers in the _src/ReminderLed.ino_ file,
       if needed.
 1. Build and upload the project to your Arduino. PlatformIO will install the
    dependencies for you.
@@ -53,4 +53,4 @@ There are two example images (made using
 connections in the _schematics_ folder. The model of the RTC board is
 _DS3231 AT24C32_.
 
-![A breadboard schematic for Uno](schematics/Medicine-reminder-Uno.png "A breadboard schematic for Uno")
+![A breadboard schematic for Uno](schematics/Reminder-led-Uno.png "A breadboard schematic for Uno")
