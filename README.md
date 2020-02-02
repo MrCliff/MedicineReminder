@@ -1,18 +1,18 @@
-Medicine reminder
-=================
+Reminder led
+============
 
-A program for Arduino that can be used to remind you, for example, to take your
-medicine. The idea is that you have a RGB led that acts as an indicator: If the
-led is green, things are all right, but the more red the led gets the longer you
-have been without taking your medicine. The only thing you have to remember to
-do, when taking medicine, is to press the reset button, which sets the led green
-again.
+A led controller program for Arduino that can be used to remind you, for example,
+to take your vitamin pills or walk your dog. The idea is that you have a RGB led
+that acts as an indicator: If the led is green, things are all right, but the more
+red the led gets the longer you have been without taking your vitamins or your dog
+out. The only thing you have to remember to do, when taking your vitamins, is to
+press the reset button, which sets the led green again.
 
-One reason I made this program is because if you have to take medicine
-regularly, it quickly becomes a habit. And when it becomes a habit, you might
-oftentimes forget, whether you just have taken the medicine or not. But now, if
-you add just one button press to your habit, Arduino will tell you whether you
-just took the medicine or not.
+One reason I made this program is because if you take vitamins regularly, it
+quickly becomes a habit. And when it becomes a habit, you might oftentimes forget,
+whether you just have taken the vitamins or not. But now, if you add just one
+button press to your habit, Arduino will tell you whether you just took the
+vitamins or not.
 
 
 ## About the program
